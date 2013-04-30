@@ -1,6 +1,7 @@
 PVM_ARCH=LINUX64
-PVM_HOME=../bin/$(PVM_ARCH)
-PVM_SLAVE=$(realpath $(PVM_HOME))/slave 
+PVM_HOME_REL=../bin/$(PVM_ARCH)
+PVM_HOME=$(realpath $(PVM_HOME_REL))
+PVM_SLAVE=$(PVM_HOME)/slave 
 PVM_ROOT=/usr/lib/pvm3
 PVMINC=$(PVM_ROOT)/include
 PVMLIB=$(PVM_ROOT)/lib/$(PVM_ARCH)
