@@ -7,5 +7,6 @@
 
 #define NAMESIZE   64
 
-#define MSG_MSTR 1
-#define MSG_SLV  2
+#define MSG_PRNT 1
+#define MSG_TIDS 2
+#define MSG_COMM 3
