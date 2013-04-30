@@ -15,6 +15,4 @@ int main()
 	pvm_initsend(PvmDataDefault);
 	pvm_pkint(&mymid, 1, 1);
 	pvm_send(mrtid, MSG_SLV);
-
-	pvm_exit();
 }
