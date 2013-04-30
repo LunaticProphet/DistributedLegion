@@ -1,4 +1,4 @@
-PVM_HOME=/home/eipifi/pvm3/test
+PVM_HOME=.
 PVM_DIR_SRC=src
 PVM_DIR_BIN=bin
 PVM_BIN=$(PVM_HOME)/$(PVM_DIR_BIN)
