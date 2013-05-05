@@ -5,11 +5,11 @@ void handle(msg *m){
 	handle_req_acc_rel(m);
 }
 
-void asd(int prev){
-	sprintf(buf, "CS IN"); lg();
+void asd(int road, int prev){
+	sprintf(buf, "CS ON ROAD %i", road); lg();
 	sprintf(buf, "PREVIOUS IN CS: %i",prev); lg();
 	sleepForMax(1000);
-	sprintf(buf, "CS OUT"); lg();
+	sprintf(buf, "CS OUT OF ROAD %i", road); lg();
 }
 
 
@@ -25,6 +25,7 @@ int main()
 	stage1_init();
 
 	stage1_enter_cs(0, asd, handle);
+	stage1_enter_cs(1, asd, handle);
 		
 
 

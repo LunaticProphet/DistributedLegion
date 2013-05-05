@@ -3,6 +3,7 @@
 #include <time.h>
 #include <math.h>
 
+#define ROADS 2
 #define M_REQ 1
 #define M_ACC 2
 #define M_REL 3

@@ -22,4 +22,4 @@ int get_accept_count();
 int get_prev_in_cs();
 */
 void stage1_init();
-void stage1_enter+cs(int road, void (*event)(int), void (*msg_handler)(msg*));
+void stage1_enter_cs(int road, void (*event)(int), void (*msg_handler)(msg*));
