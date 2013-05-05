@@ -37,7 +37,6 @@ int main()
 {
 	init_slave();
 	stage1_init();
-	stage2_init();
 
 	stage1_enter_cs(0, talk_to_last_in_queue, handle);
 	stage2_enter_cs(0, 5, 10, walk_on_the_road, handle);

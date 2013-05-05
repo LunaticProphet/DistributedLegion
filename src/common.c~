@@ -33,9 +33,6 @@ void init_slave(){
 	int i;
 	for(i=0;i<nproc;++i) pvm_upkint(&tids[i], 1,1);
 }
-void quit_slave(){
-	pvm_exit();
-}
 int my_id(){
 	return myid;
 }
