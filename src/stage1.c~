@@ -73,38 +73,25 @@ void stage1_init(){
 		prev_in_cs[j] = -1;
 	}
 }
+void send_with_ts(int id, msg *m, int ts){
+	int tmp = m->stmp;
+	m->stmp = ts;
+	send(id,m);
+	m->stmp = tmp;
+}
+int trecv_with_ts(int msec, msg *m){
+	if(trecv(msec,m)){
+		if(m->stmp > timestamp) timestamp = m->stmp;
+		return 1;
+	} else return 0;
+}
+
 
 ////////////////////////////////
-
-void send_with_ts(int id, msg *m, int ts){
-	int myid = my_id();
-	pvm_initsend(PvmDataDefault);
-	pvm_pkint(&(m->type),	1,1);
-	pvm_pkint(&(ts),	1,1);
-	pvm_pkint(&myid,		1,1);
-	pvm_pkint(&(m->data),	1,1);
-	pvm_pkint(&(m->road),	1,1);
-	pvm_send(tid(id), MSG_COMM);
-	//sprintf(buf,"SND%i type=%i stmp=%i from=%i",id,m->type,ts,myid); lg();
-}
 void send(int id, msg *m){
 	send_with_ts(id, m, ++timestamp);
 }
-int trecv(int usec, msg *m){
-	struct timeval t;
-	t.tv_sec = 0;
-	t.tv_usec = usec*1000;
-	int e = pvm_trecv(-1, MSG_COMM, &t);
-	if(e <= 0) return 0;
-	pvm_upkint(&(m->type), 	1,1);
-	pvm_upkint(&(m->stmp),	1,1);
-	pvm_upkint(&(m->from), 	1,1);
-	pvm_upkint(&(m->data), 	1,1);
-	pvm_upkint(&(m->road), 	1,1);
-	if(m->stmp > timestamp) timestamp = m->stmp;
-	//sprintf(buf,"RECV type=%i stmp=%i from=%i",m->type,m->stmp,m->from); lg();
-	return 1;
-}
+
 void send_req_to(int road, int id, int ts){
 	msg t;
 	t.type = M_REQ;
@@ -117,18 +104,18 @@ void send_rel_to(int road, int id){
 	t.type = M_REL;
 	t.data = my_id();
 	t.road = road;
-	send(id, &t);
+	send_with_ts(id, &t, ++timestamp);
 }
 void send_acc_to(int road, int id){
 	msg t;
 	t.type = M_ACC;
 	t.data = get_prev_in_cs(road);
 	t.road = road;
-	send(id, &t);
+	send_with_ts(id, &t, ++timestamp);
 }
 void handle_req_acc_rel(msg *m){
 	msg *t;
-	if(m->data > get_prev_in_cs(m->road)) prev_in_cs[road] = m->data;
+	if(m->data > get_prev_in_cs(m->road)) prev_in_cs[m->road] = m->data;
 	switch(m->type){
 		case M_ACC:
 				accepts++;
@@ -165,7 +152,7 @@ void stage1_enter_cs(int road, void (*event)(int,int), void (*msg_handler)(msg*)
 		send_req_to(road, i,ts);
 
 	while(get_accept_count() != peer_count() || tqueue_top(road)->from != my_id())
-		if(trecv(1000,&m))
+		if(trecv_with_ts(1000,&m))
 			msg_handler(&m);
 
 	event(road, get_prev_in_cs(road));
@@ -174,6 +161,6 @@ void stage1_enter_cs(int road, void (*event)(int,int), void (*msg_handler)(msg*)
 		send_rel_to(road, i);
 
 	while(hang_count(road) > 0)
-		if(trecv(1000, &m))
+		if(trecv_with_ts(1000, &m))
 			msg_handler(&m);
 }

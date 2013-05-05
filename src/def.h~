@@ -3,7 +3,7 @@
 #include <pvm3.h>
 
 #define SLAVENAME "slave"
-#define SLAVENUM   9
+#define SLAVENUM   4
 
 #define NAMESIZE   64
 

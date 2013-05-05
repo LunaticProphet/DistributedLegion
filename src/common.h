@@ -1,7 +1,4 @@
 #include "def.h"
-#include <stdio.h>
-#include <time.h>
-#include <math.h>
 
 #define ROADS 2
 #define M_REQ 1
@@ -24,3 +21,5 @@ int my_id();
 int peer_count();
 void sleepForMax(int n);
 void init();
+void send(int id, msg *m);
+int trecv(int usec, msg *m);

@@ -1,3 +1,4 @@
+#include "def.h"
 #include "common.h"
 #include "stage1.h"
 
@@ -25,6 +26,7 @@ int main()
 	stage1_init();
 
 	stage1_enter_cs(0, asd, handle);
+	stage1_enter_cs(1, asd, handle);
 		
 
 

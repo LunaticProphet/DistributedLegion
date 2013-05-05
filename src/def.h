@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pvm3.h>
 
 #define SLAVENAME "slave"
 #define SLAVENUM   4

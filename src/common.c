@@ -1,4 +1,6 @@
 #include "common.h"
+#include <pvm3.h>
+#include <time.h>
 int tids[SLAVENUM];
 int nproc;
 int mytid;	// my TID
@@ -36,4 +38,27 @@ int my_id(){
 }
 int peer_count(){
 	return nproc;
+}
+void send(int id, msg *m){
+	int tmp = my_id();
+	pvm_initsend(PvmDataDefault);
+	pvm_pkint(&(m->type),	1,1);
+	pvm_pkint(&(m->stmp),	1,1);
+	pvm_pkint(&tmp,			1,1);
+	pvm_pkint(&(m->data),	1,1);
+	pvm_pkint(&(m->road),	1,1);
+	pvm_send(tid(id), MSG_COMM);
+}
+int trecv(int usec, msg *m){
+	struct timeval t;
+	t.tv_sec = 0;
+	t.tv_usec = usec*1000;
+	int e = pvm_trecv(-1, MSG_COMM, &t);
+	if(e <= 0) return 0;
+	pvm_upkint(&(m->type), 	1,1);
+	pvm_upkint(&(m->stmp),	1,1);
+	pvm_upkint(&(m->from), 	1,1);
+	pvm_upkint(&(m->data), 	1,1);
+	pvm_upkint(&(m->road), 	1,1);
+	return 1;
 }
