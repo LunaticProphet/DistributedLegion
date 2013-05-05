@@ -17,7 +17,7 @@ int main(int argc, char* argv[])
 	nproc=pvm_spawn(argv[1], NULL, PvmTaskDefault, "", SLAVENUM, tids);
 	printf("Spawned %i slaves \n", nproc);
 
-	
+
 
 
 	for( i=0 ; i<nproc ; i++ ) //send to each slave
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 		printf("P%i: %s\n", who,buf);
 		if(!strcmp(buf, "finished")){
 			if(++finishes==nproc){
-				printf("Work done!\n");		
+				printf("Work done!\n");
 				pvm_exit();
 				return 0;
 			}
@@ -50,3 +50,4 @@ int main(int argc, char* argv[])
 	}
 	return 0;
 }
+

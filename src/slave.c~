@@ -269,9 +269,11 @@ void handle(msg *m){
 			*/
 			break;
 		case M_REL:
+			int asdasd;
+
 			req_del(m->from);
-			int asdasd = req_count();
-			sprintf(buf, "RELEASE FROM %i, ON STACK: %i", m->from, asdasd);
+			asdasd = req_count();
+			sprintf(buf, "RELEASE FROM %i, ON STACK:%i ", m->from, asdasd);
 			lg();
 			break;
 
