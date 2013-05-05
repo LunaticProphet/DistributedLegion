@@ -102,7 +102,7 @@ void req_del(int from){
 	for(i=0;i<SLAVENUM;++i){
 		if(reqs[i].from == from){
 			reqs[i].from = -1;
-			break;
+			//break;
 		}
 	}
 }
@@ -231,6 +231,7 @@ void send_rel_to(int id){
 	send(id, &t);
 }
 void handle(msg *m){
+	int asdasd1, asdasd2;
 	switch(m->type){
 
 		case M_ACC:
@@ -269,9 +270,10 @@ void handle(msg *m){
 			*/
 			break;
 		case M_REL:
+			asdasd1 = req_count();
 			req_del(m->from);
-			int asdasd = req_count();
-			sprintf(buf, "RELEASE FROM %i, ON STACK: %i", m->from, asdasd);
+			asdasd2 = req_count();
+			sprintf(buf, "RELEASE FROM %i, ON STACK:%i WAS:%i", m->from, asdasd2, asdasd1);
 			lg();
 			break;
 
