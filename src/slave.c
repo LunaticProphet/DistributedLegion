@@ -10,22 +10,19 @@
 char buf[1024];
 int nproc;
 int tids[SLAVENUM];
-int friends[SLAVENUM];
-int nfriends = 0;
 int timestamp = 0;
-int legit_accepts = 0;
+int prev_in_cs = -1;
+int accepts = 0;
 
 int mytid;	// my TID
 int myid;	// my position in TIDS
 int mrtid;	// master TID
-int accepted[SLAVENUM];
 
 typedef struct{
 	int type;
 	int stmp;
 	int from;
-	int val1;
-	int val2;
+	int prev;
 } msg;
 
 void lg(){
@@ -36,123 +33,62 @@ void lg(){
 }
 
 ///////////////////////////////////////////
-int acc_contains(int id){
+msg tqueue[SLAVENUM];
+void tqueue_add(msg *m){
 	int i;
-	for(i=0;i<SLAVENUM;++i) 
-		if(accepted[i]==id) 
-			return 1;
-	return 0;
+	for(i=0;i<SLAVENUM;++i) if(tqueue[i].from == -1){
+		tqueue[i] = *m;
+		break;
+	}
 }
-
-void acc_add(int id){
+void tqueue_del(int from){
 	int i;
-	for(i=0;i<SLAVENUM;++i) 
-		if(accepted[i]==-1){
-			accepted[i]=id;
-			break;
+	for(i=0;i<SLAVENUM;++i) if(tqueue[i].from == from){
+		tqueue[i].from = -1;
+		break;
+	}
+}
+msg* tqueue_top(){
+	int i,best = -1;
+	for(i=0;i<SLAVENUM;++i){
+		if(tqueue[i].from != -1){
+			if(best == -1 || tqueue[i].stmp < tqueue[best].stmp || (tqueue[i].stmp == tqueue[best].stmp && tqueue[i].from < tqueue[best].from)){
+				best = i;
+			}
 		}
+	}
+	if(best == -1) return 0;
+	return &tqueue[best];
 }
-
-void acc_del(int id){
-	int i;
-	for(i=0;i<SLAVENUM;++i) 
-		if(accepted[i]==id){
-			accepted[i]=-1;
-			break;
-		}
-}
-void acc_del_all(){
-	int i;
-	for(i=0;i<SLAVENUM;++i) accepted[i] = -1;
-}
-
-int acc_count(){
-	int i,r = 0;
-	for(i=0;i<SLAVENUM;++i) 
-		if(accepted[i]!=-1) ++r;
-	return r;
-}
-
 ///////////////////////////////////////////
-msg reqs[SLAVENUM];
-
-int req_contains(int from){
-	int i;
-	for(i=0;i<SLAVENUM;++i){
-		if(reqs[i].from == from) return 1;
-	}
-	return 0;
+int hang[SLAVENUM];
+void hang_add(int i){
+	hang[i] = 1;	
 }
-
-void req_add(msg *m){	
-	int i;
-	for(i=0;i<SLAVENUM;++i){
-		if(reqs[i].from == -1){
-			reqs[i].type = m->type;
-			reqs[i].stmp = m->stmp;
-			reqs[i].from = m->from;
-			reqs[i].val1 = m->val1;
-			reqs[i].val2 = m->val2;
-			break;
-		}
-	}
+void hang_del(int i){
+	hang[i] = 0;
 }
-void req_del(int from){
-	int i;
-	for(i=0;i<SLAVENUM;++i){
-		if(reqs[i].from == from){
-			reqs[i].from = -1;
-			//break;
-		}
-	}
+int hang_contains(int i){
+	return hang[i];
 }
-msg* req_top(){
-	int i;
-	int best = -1;
-	for(i=0;i<SLAVENUM;++i){
-		if(reqs[i].from != -1){
-			best = i;
-			break;
-		}	
-	}
-	if(best == -1){
-		return 0;
-	}	
-	for(i=best;i<SLAVENUM;++i){
-		if(reqs[i].from != -1){
-			if(reqs[i].stmp==reqs[best].stmp){
-				if(reqs[i].from<reqs[best].from) best=i;
-			}
-			else if(reqs[i].stmp<reqs[best].stmp){
-				best=i;	
-			}
-		}
-	}
-	return &reqs[best];
-}
-int req_count(){
+int hang_count(){
 	int i,c=0;
-	for(i=0;i<SLAVENUM;++i){
-		if(reqs[i].from != -1) ++c;
-	}
+	for(i=0;i<SLAVENUM;++i) if(hang_contains(i)) ++c;
 	return c;
-} 
+}
 ///////////////////////////////////////////
 
 int tid(int id){
 	return tids[id];
 }
-
 int randn(int n){
 	return rand()%n;
 }
-
 void sleepForMax(int n){
-	usleep(randn(n));
+	usleep(randn(n*1000));
 }
-
-
 void init(){
+    srand(myid);
 	mytid = pvm_mytid();
 	pvm_recv(-1, MSG_TIDS);
 	pvm_upkint(&mrtid, 1,1);
@@ -160,125 +96,81 @@ void init(){
 	pvm_upkint(&nproc, 1,1);
 	int i;
 	for(i=0;i<nproc;++i) pvm_upkint(&tids[i], 1,1);
-    srand(myid);
-
-	int groups = ceil(sqrt(nproc));
-	int a = myid / groups;
-	int b = myid % groups;
-	int t;
-	for(i=0;i<groups;++i){
-		t = a*groups + i;
-		if(t<nproc && t!=myid)	friends[nfriends++] = t;
-	}
-	for(i=0;i<groups;++i){
-		t = i*groups + b;
-		if(t<nproc && t!=myid)	friends[nfriends++] = t;
-	}
-	for(i=0;i<SLAVENUM;++i){
-		reqs[i].from = -1;
-	}
-	for(i=0;i<SLAVENUM;++i){
-		accepted[i] = -1;
-	}
+	for(i=0;i<SLAVENUM;++i) tqueue[i].from = -1;
 }
-
-void sendt(int id, msg *m, int ts){
-	pvm_initsend(PvmDataDefault);	//initialize sending
+void send_with_ts(int id, msg *m, int ts){
+	pvm_initsend(PvmDataDefault);
 	pvm_pkint(&(m->type),	1,1);
 	pvm_pkint(&(ts),	1,1);
 	pvm_pkint(&myid,		1,1);
-	pvm_pkint(&(m->val1),	1,1);
-	pvm_pkint(&(m->val2),	1,1);
+	pvm_pkint(&(m->prev),	1,1);
 	pvm_send(tid(id), MSG_COMM);
-	if(myid==3){
-		sprintf(buf, "DEBUG3 to=%i type=%i stmp=%i from=%i val1=%i val2=%i", id, m->type, ts, myid, m->val1, m->val2);
-		lg();
-	}
+	sprintf(buf,"SND%i type=%i stmp=%i from=%i",id,m->type,ts,myid);
+	lg();
 }
-
 void send(int id, msg *m){
-	sendt(id, m, ++timestamp);
+	send_with_ts(id, m, ++timestamp);
 }
-
-int recv(int usec, msg *m){
+int trecv(int usec, msg *m){
 	struct timeval t;
 	t.tv_sec = 0;
-	t.tv_usec = usec;
+	t.tv_usec = usec*1000;
 	int e = pvm_trecv(-1, MSG_COMM, &t);
 	if(e <= 0) return 0;
 	pvm_upkint(&(m->type), 	1,1);
 	pvm_upkint(&(m->stmp),	1,1);
 	pvm_upkint(&(m->from), 	1,1);
-	pvm_upkint(&(m->val1), 	1,1);
-	pvm_upkint(&(m->val2), 	1,1);
+	pvm_upkint(&(m->prev), 	1,1);
 	if(m->stmp > timestamp) timestamp = m->stmp;
-	sprintf(buf, "Received message type=%i stmp=%i from=%i val1=%i val2=%i", m->type, m->stmp, m->from, m->val1, m->val2);
+	sprintf(buf,"RECV type=%i stmp=%i from=%i",m->type,m->stmp,m->from);
 	lg();
 	return 1;
 }
 void send_req_to(int id, int ts){
 	msg t;
 	t.type = M_REQ;
-	t.val1 = 0;
-	t.val2 = 0;
-	sendt(id, &t, ts);
+	t.prev = prev_in_cs;
+	send_with_ts(id, &t, ts);
 }
 void send_rel_to(int id){
 	msg t;
 	t.type = M_REL;
-	t.val1 = 0;
-	t.val2 = 0;
+	t.prev = myid;
+	send(id, &t);
+}
+void send_acc_to(int id){
+	msg t;
+	t.type = M_ACC;
+	t.prev = prev_in_cs;
 	send(id, &t);
 }
 void handle(msg *m){
-	int asdasd1, asdasd2;
+	msg *t;
+	if(m->prev > prev_in_cs) prev_in_cs = m->prev;
 	switch(m->type){
-
 		case M_ACC:
-			acc_add(m->from);
-			if(m->val1 != myid){
-				msg t;
-				t.type = M_REQ;
-				t.val1 = 0;
-				t.val2 = m->val2;
-				send(m->val1, &t);
-			}else{
-				legit_accepts++;
-				int asdasd = req_count();
-				sprintf(buf, "LEGIT ACCEPT (%i) FROM %i, ON STACK: %i", legit_accepts, m->from, asdasd);
-				lg();
-			}
-			
+				accepts++;
 			break;
-		case M_REQ:
-
-			req_add(m);
-			msg* t = req_top();
-			msg resp;
-			resp.type = M_ACC;
-			resp.val1 = t->from;
-			resp.val2 = 0;
-			send(m->from, &resp);
-			
-
-			/*
-
-			jeśli nie chcę wejść do sekcji, nikt mnie nie poprosił o wejście, to daję ACCEPT
-			jeśli komuś dałem zgodę, a koleś który się pyta ma lepszy priorytet, daję mu accept warunkowy
-			jeśli sam chcę wejść, 
-
-			*/
+		case M_REQ:	
+				tqueue_add(m);
+				t = tqueue_top();
+				if(t->from == m->from)
+					send_acc_to(m->from);
+				else
+					hang_add(m->from);
 			break;
 		case M_REL:
-			asdasd1 = req_count();
-			req_del(m->from);
-			asdasd2 = req_count();
-			sprintf(buf, "RELEASE FROM %i, ON STACK:%i WAS:%i", m->from, asdasd2, asdasd1);
-			lg();
+				tqueue_del(m->from);
+				t = tqueue_top();
+				if(t != 0)
+					if(hang_contains(t->from)){
+						hang_del(t->from);
+						send_acc_to(t->from);
+					}
 			break;
 
 		default:
-			sprintf(buf, "HOUSTON...");
+			sprintf(buf, "HOUSTON..."); 
 			lg();
 	}
 	usleep(500000);
@@ -293,63 +185,39 @@ void handle(msg *m){
 
 int main()
 {
-
-	init();
-	sleepForMax(1000000);
-	//chcemy wejść do sekcji krytycznej
-
-	int init_ts = timestamp;
-
 	int i;
 	msg m;
-	send_req_to(myid, init_ts);
-	while(acc_count() == 0){
-		if(recv(1000000, &m)){
-			handle(&m);
-		}
-	}
-	//Kiedy otrzymam accepta od samego siebie
+	init();
 
-	for(i=0;i<nfriends;++i){
-		send_req_to(friends[i], init_ts);
-	}
-
-	msg* tmp;
-	while(1){
-		tmp = req_top();
-		if(legit_accepts==nfriends+1 && tmp->from == myid)
-			break;
-
-		if(recv(1000000, &m)){
-			handle(&m);
-		}
-	}
-
-	//zakładam że jestem na req_top
-
-	//wchodzę do sekcji krytycznej
-	sprintf(buf, "CS IN -------");
-	lg();
-	sleepForMax(1000000);
-	sprintf(buf, "CS OUT ------");
-	lg();
-
-	for(i=0;i<SLAVENUM;++i){
-		if(accepted[i] != -1){
-			send_rel_to(i);
-		}	
-	}
-	acc_del_all();
-	legit_accepts = 0;
+	//chcę wejść do CS
+	int ts = timestamp;
+	for(i=0;i<nproc;++i)
+		send_req_to(i,ts);
 
 	while(1){
-		if(recv(1000000, &m)){
+		if(accepts==nproc && tqueue_top()->from == myid) break;
+		if(trecv(1000,&m))
 			handle(&m);
-		}
 	}
 
+	sprintf(buf, "CS IN "); lg();
 
-	sprintf(buf, "finished");
+	sprintf(buf, "PREVIOUS IN CS: %i",prev_in_cs); lg();
+	sleepForMax(1000);
+	sprintf(buf, "CS OUT"); lg();
+	
+	for(i=0;i<nproc;++i)
+		send_rel_to(i);
+
+	sprintf(buf,"DONE --------------------");
 	lg();
+
+	while(hang_count() > 0)
+		if(trecv(1000, &m))
+			handle(&m);
+		
+
+
+	sprintf(buf, "finished"); lg();
 	pvm_exit();
 }

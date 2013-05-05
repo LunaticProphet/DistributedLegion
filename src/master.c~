@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 		pvm_recv(-1, MSG_PRNT);
 		pvm_upkint(&who, 1,1);
 		pvm_upkstr(buf);
-		for(i=0;i<who;++i) printf("                                ");
+		//for(i=0;i<who;++i) printf("                                ");
 		printf("P%i: %s\n", who,buf);
 		if(!strcmp(buf, "finished")){
 			if(++finishes==nproc){
