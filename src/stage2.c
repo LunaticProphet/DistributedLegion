@@ -14,6 +14,7 @@ token_pocket state;
 void send_ask_to(int id){
 	msg t;
 	t.type = M_ASK;
+	sprintf(buf, "SND%i type=%i from=%i data=%i", id, t.type, t.from, t.data); lg();
 	send(id, &t);
 }
 
@@ -21,6 +22,7 @@ void send_tks_to(int id, int count){
 	msg t;
 	t.type = M_TKS;
 	t.data = count;
+	sprintf(buf, "SND%i type=%i from=%i data=%i", id, t.type, t.from, t.data); lg();
 	send(id, &t);
 }
 
@@ -37,8 +39,8 @@ void handle_ask_tks(msg *m){
 		break;
 
 		case M_TKS:
-			s->moved += m->data;
 			if(s->goal){
+				s->moved += m->data;
 				send_tks_to(s->next_peer, m->data);
 			}else{
 				s->tks += m->data;
@@ -59,14 +61,19 @@ void stage2_init(){
 	state.moved = 0;
 }
 
-void stage2_enter_queue(int target){
-	send_ask_to(target);
+void stage2_enter_queue(int target, int overall){
+	if(target == -1){
+		token_pocket *s = &state;
+		s->tks = overall;
+	}
+	else
+		send_ask_to(target);
 }
 
 ///////////////////////////
-int keep_working;
+token_pocket *tohalt;
 void stopper(int signal){
-	keep_working = 0;
+	tohalt->goal = 1;
 }
 ///////////////////////////
 
@@ -78,31 +85,33 @@ void stage2_enter_cs(int road, int required, int overall, void (*event)(int), vo
 		if(trecv(1000,&m))
 			msg_handler(&m);
 	}
-	
-	event(road);
-	s->goal = 1;
 
-	/*
-	keep_working = 1;
+
 	int child = fork();
-	if(child){ //mam dziecko, jestem rodzicem
-		event();
-		s->goal = 1;					
-		kill(getppid(), SIGUSR1);
-	}else{ //nie mam dziecka, jestem dzieckiem
+	if(child){ //parent
+		tohalt = s;
 		signal(SIGUSR1, stopper);
-		while(keep_working){
-			if(trecv(100,&m))
-				msg_handler(&m);
-		}
-		exit(0);	
-	}		
-	*/
-
-	while(s->moved < overall){
-		if(trecv(1000,&m))
+		while(s->goal==0 || s->moved < overall){
+			if(trecv(1000,&m))
 			msg_handler(&m);
+			if(
+				s->next_peer != -1 && (
+					(s->goal==0 && s->tks>required) ||
+					(s->goal==1 && s->tks>0)
+				)
+			){
+				send_tks_to(s->next_peer, s->tks);
+				s->moved += s->tks;
+				s->tks = 0;
+			}
+		}
+	}else{ //child
+		event(road);
+		s->goal = 1;
+		kill(getppid(), SIGUSR1);
+		exit(0);
 	}
+
 	s->next_peer = -1;
 	s->goal = 0;
 	s->moved = 0;

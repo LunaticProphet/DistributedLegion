@@ -18,11 +18,11 @@ void handle(msg *m){
 }
 
 void talk_to_last_in_queue(int road, int prev){
-	stage2_enter_queue(prev);
+	stage2_enter_queue(prev, 10);
 }
 
 void walk_on_the_road(int road){
-	sprintf(buf,"Imma walkin' on da road %i", road);
+	sprintf(buf,"Imma walkin' on da road %i", road); lg();
 	sleepForMax(1000);
 }
 

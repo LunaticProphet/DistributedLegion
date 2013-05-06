@@ -22,7 +22,7 @@ void talk_to_last_in_queue(int road, int prev){
 }
 
 void walk_on_the_road(int road){
-	sprintf(buf,"Imma walkin' on da road %i", road);
+	sprintf(buf,"Imma walkin' on da road %i", road); lg();
 	sleepForMax(1000);
 }
 
@@ -37,6 +37,7 @@ int main()
 {
 	init_slave();
 	stage1_init();
+	stage2_init();
 
 	stage1_enter_cs(0, talk_to_last_in_queue, handle);
 	stage2_enter_cs(0, 5, 10, walk_on_the_road, handle);
