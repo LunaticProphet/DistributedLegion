@@ -152,7 +152,7 @@ void stage1_enter_cs(int road, void (*event)(int,int), void (*msg_handler)(msg*)
 		if(trecv_with_ts(1000,&m))
 			msg_handler(&m);
 
-	event(road, get_prev_in_cs(road));
+	event(get_prev_in_cs(road),road);
 
 	for(i=0;i<peer_count();++i)
 		send_rel_to(road, i);

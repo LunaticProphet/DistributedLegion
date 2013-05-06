@@ -1,6 +1,5 @@
 #include "def.h"
 
-#define ROADS 2
 
 typedef struct{
 	int type;

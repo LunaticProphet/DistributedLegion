@@ -9,3 +9,6 @@
 #define MSG_PRNT 1
 #define MSG_TIDS 2
 #define MSG_COMM 3
+
+#define ROADS 2
+extern const int roadsize[];
