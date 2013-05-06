@@ -4,5 +4,5 @@
 
 void stage2_init();
 void handle_ask_tks(msg *m);
-void stage2_enter_queue(int target, int overall);
+void stage2_enter_queue(int target, int road, int overall);
 void stage2_enter_cs(int road, int required, int overall, void (*event)(int), void (*msg_handler)(msg*));
